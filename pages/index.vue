@@ -15,8 +15,13 @@
         div.col-12.row 
           div.col-3 timezone
           div.col-9 {{ $store.state.timezone }}
-
-      div.col-6.row
+        div.col-12.row 
+          div.col-3 Edit link
+          div.col-9 {{ $store.state.urls.private }}
+        div.col-12.row 
+          div.col-3 View only link
+          div.col-9 {{ $store.state.urls.public }}
+      div.col-4.row
         div.col-3
         div.col-9.row
           div.col-6.row
@@ -31,6 +36,7 @@
           div.col-6.row
             div.col-12 race
             div.col-12 {{ $store.state.times.race }}
+       
     hr
     div.row
       div.col-6.row
@@ -45,44 +51,180 @@
           div.col-9 {{ $store.state.entry.setup }}
     hr
     div.row
-      div.col driver
-      div.col driver
-      div.col driver
-      div.col driver
-      div.col driver
+      div.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key')
+        span.badge.badge-light(:style='"background-color:" + driver.color ') {{ driver.short }} 
+        i(title='start driver', v-if='isStartMember(driver, false)').fas.fa-car-side.driver-icon
+        i(title='start spotter', v-if='isStartMember(driver, true)').fas.fa-binoculars.driver-icon
+        i(title='end driver', v-if='isEndMember(driver, false)').fas.fa-flag-checkered.driver-icon
     div.row
-      div.col drivername
-      div.col drivername
-      div.col drivername
-      div.col drivername
-      div.col drivername
-    h1 race
+      div.row.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key') 
+        div.col-12 {{ getDriverString(driver) }} 
+    h1 race 
+    a.btn.btn-primary(v-on:click='addEmptyStint') add stint
+    hr
     div.row
-      div.col-6
+      div.col-12
         table.table.table-bordered.col-12
           thead
             tr
+              th(scope='col') #
+              th(scope='col') 
               th(scope='col') START
               th(scope='col') END
               th(scope='col') LENGTH
               th(scope='col') DRIVER
               th(scope='col') SPOTTER
-              th(scope='col') REMARKS
-            tr
-              td 12:00
-              td 13:00
-              td 1,00
-              td foo bar
-              td bar barz
-              td regular length
+              th(scope='col') Change driver
+              th(scope='col') Change spotter
+              th(scope='col') Delete
+            tr(v-for='(stint, stint_key) in stints', :key='stint_key')
+              td {{ stint_key + 1}}
+              td 
+                div.col-12 
+                  a(href='#',v-on:click.prevent='moveStint(-1,stint_key)').far.fa-arrow-alt-circle-up
+                div.col-12
+                  a(href='#',v-on:click.prevent='moveStint(1,stint_key)').far.fa-arrow-alt-circle-down
+              td {{ formatDate(stint.start) }}
+              td {{ formatDate(stint.end) }}
+              td.col-1 
+                input(class='form-control', type='number', v-model.number='stint.length', @change='updateStints') 
+              td(:style='"background-color: " + stint.driver.color ').driver-stint {{ stint.driver.short }}
+              td(:style='"background-color: " + stint.spotter.color ').driver-stint {{ stint.spotter.short }}
+              td 
+                select(class='form-control',v-model='stint.driver', @change='updateStints')
+                  option(v-for="(driver, driver_key) in $store.state.drivers", :key='driver_key', :value='driver') {{ driver.firstName + ' ' + driver.lastName}} 
+              td  
+                select(class='form-control',v-model='stint.spotter', @change='updateStints')
+                  option(v-for="(driver, driver_key) in $store.state.drivers", :key='driver_key', :value='driver') {{ driver.firstName + ' ' + driver.lastName}}
+              td
+                a(href='#', v-on:click.prevent='removeStint(stint_key)') 
+                  i.fas.fa-trash
       div.col-1
       div.col-5
 
 </template>
 
 <script>
-export default {}
+Date.prototype.addMinutes = function(minutes) {
+  this.setTime(this.getTime() + minutes * 60 * 1000)
+  return this
+}
+export default {
+  data: () => {
+    return {
+      stints: []
+    }
+  },
+  mounted() {
+    this.stints = this.calculateStints()
+  },
+  methods: {
+    isStartMember(driver, isSpotter) {
+      if (this.stints.length > 0) {
+        return (
+          (!isSpotter && this.stints[0].driver.short === driver.short) ||
+          (isSpotter && this.stints[0].spotter.short === driver.short)
+        )
+      }
+      return false
+    },
+    isEndMember(driver, isSpotter) {
+      if (this.stints.length > 0) {
+        return (
+          (!isSpotter &&
+            this.stints[this.stints.length - 1].driver.short ===
+              driver.short) ||
+          (isSpotter &&
+            this.stints[this.stints.length - 1].spotter.short === driver.short)
+        )
+      }
+      return false
+    },
+    copy(data) {
+      return JSON.parse(JSON.stringify(data))
+    },
+    getDriverByShortCode(shortCode) {
+      return this.$store.state.drivers.find(driver => {
+        return driver.short === shortCode
+      })
+    },
+    getDriverString(driver) {
+      return driver.firstName + ' ' + driver.lastName
+    },
+    formatDate(date) {
+      return date.toLocaleTimeString()
+    },
+    calculateStints() {
+      var stints = []
+      var raceStart = this.$store.state.times.race
+      var raceStartDateTime = new Date()
+      raceStartDateTime.setUTCMinutes(0)
+      raceStartDateTime.setUTCHours(12)
+      raceStartDateTime.setUTCSeconds(0)
+      console.log(raceStartDateTime)
+      var lastTime = raceStartDateTime
+      this.$store.state.stints.forEach(element => {
+        var clone = this.copy(element)
+        clone['driver'] = this.getDriverByShortCode(element.driver)
+        clone['spotter'] = this.getDriverByShortCode(element.spotter)
+        clone['start'] = new Date(lastTime.getTime())
+        clone['end'] = new Date(lastTime.addMinutes(clone.length))
+        lastTime = new Date(clone['end'].getTime())
+        stints.push(clone)
+      })
+      return stints
+    },
+    addEmptyStint() {
+      this.stints.push(this.copy(this.stints[this.stints.length - 1]))
+      this.updateStints()
+    },
+    removeStint(index) {
+      if (this.stints.length === 1) {
+        return
+      }
+      this.stints.splice(index, 1)
+      this.updateStints()
+    },
+    changeStintMembers(index, driver, isSpotter) {
+      if (!isSpotter) {
+        this.stints[index].driver = driver
+      } else {
+        this.stints[index].spotter = driver
+      }
+    },
+    updateStints() {
+      var rawStints = this.copy(this.stints)
+      rawStints.forEach(element => {
+        element.driver = element.driver.short
+        element.spotter = element.spotter.short
+      })
+      this.$store.commit('updateStints', rawStints)
+      this.stints = this.calculateStints()
+    },
+    moveStint(direction, index) {
+      if (direction < 0 && index > 0) {
+        var element = this.stints[index - 1]
+        this.stints[index - 1] = this.stints[index]
+        this.stints[index] = element
+        this.updateStints()
+      }
+      if (direction > 0 && index < this.stints.length - 1) {
+        var element = this.stints[index + 1]
+        this.stints[index + 1] = this.stints[index]
+        this.stints[index] = element
+        this.updateStints()
+      }
+    }
+  }
+}
 </script>
 
 <style>
+.driver-icon {
+  margin-left: 1em;
+}
+.driver-stint {
+  vertical-align: middle !important;
+  text-align: center;
+}
 </style>
