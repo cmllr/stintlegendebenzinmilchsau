@@ -87,7 +87,12 @@ const indexStore = new Vapi({
 indexStore.mutations.updateStints = (state, newStints) => {
   state.stints = newStints
 }
-
+indexStore.mutations.removeDriver = (state, driver) => {
+  state.drivers.splice(state.drivers.indexOf(driver), 1)
+}
+indexStore.mutations.addDriver = (state, driver) => {
+  state.drivers.push(driver)
+}
 const createStore = () => {
   return new Vuex.Store(indexStore)
 }

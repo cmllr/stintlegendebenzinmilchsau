@@ -51,14 +51,37 @@
           div.col-9 {{ $store.state.entry.setup }}
     hr
     div.row
-      div.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key')
-        span.badge.badge-light(:style='"background-color:" + driver.color ') {{ driver.short }} 
-        i(title='start driver', v-if='isStartMember(driver, false)').fas.fa-car-side.driver-icon
-        i(title='start spotter', v-if='isStartMember(driver, true)').fas.fa-binoculars.driver-icon
-        i(title='end driver', v-if='isEndMember(driver, false)').fas.fa-flag-checkered.driver-icon
-    div.row
-      div.row.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key') 
-        div.col-12 {{ getDriverString(driver) }} 
+      div.col-10
+        div.row
+          div.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key')
+            span.badge.badge-light(:style='"background-color:" + driver.color ') {{ driver.short }} 
+            i(title='start driver', v-if='isStartMember(driver, false)').fas.fa-car-side.driver-icon
+            i(title='start spotter', v-if='isStartMember(driver, true)').fas.fa-binoculars.driver-icon
+            i(title='end driver', v-if='isEndMember(driver, false)').fas.fa-flag-checkered.driver-icon
+            a(href='#', v-on:click.prevent='removeDriver(driver)')
+              i.fas.fa-trash
+        div.row
+          div.row.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key') 
+            div.col-12 {{ getDriverString(driver) }} 
+      div.col-1 
+        a(href='#',@click="newDriverData.dialogOpen = !newDriverData.dialogOpen") add driver...
+    div.row(v-if="newDriverData.dialogOpen")
+      div.col-4
+      div.col-4
+        div.form-group
+          label first name
+          input.form-control(placeholder='first name',v-model="newDriverData.firstName")
+        div.form-group
+          label last name
+          input.form-control(placeholder='last name',v-model="newDriverData.lastName")
+        div.form-group
+          label short code
+          input.form-control(placeholder='last name',v-model="newDriverData.short")
+        div.form-group
+          label color
+          input.form-control(placeholder='last name',v-model="newDriverData.color")
+        div.form-group
+          button(class='btn btn-primary',v-on:click="addDriver") add
     h1 race 
     a.btn.btn-primary(v-on:click='addEmptyStint') add stint
     hr
@@ -112,7 +135,14 @@ Date.prototype.addMinutes = function(minutes) {
 export default {
   data: () => {
     return {
-      stints: []
+      stints: [],
+      newDriverData: {
+        firstName: null,
+        lastName: null,
+        dialogOpen: false,
+        color: 'black',
+        short: null
+      }
     }
   },
   mounted() {
@@ -214,6 +244,24 @@ export default {
         this.stints[index] = element
         this.updateStints()
       }
+    },
+    removeDriver(driver) {
+      if (
+        typeof this.stints.find(function(e) {
+          return e.spotter === driver || e.driver === driver
+        }) === 'undefined'
+      ) {
+        this.$store.commit('removeDriver', driver)
+      }
+    },
+    addDriver() {
+      this.$store.commit('addDriver', {
+        firstName: this.newDriverData.firstName,
+        lastName: this.newDriverData.lastName,
+        short: this.newDriverData.short,
+        color: this.newDriverData.color
+      })
+      this.newDriverData.dialogOpen = false
     }
   }
 }
