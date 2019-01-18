@@ -96,8 +96,6 @@
               th(scope='col') LENGTH
               th(scope='col') DRIVER
               th(scope='col') SPOTTER
-              th(scope='col') Change driver
-              th(scope='col') Change spotter
               th(scope='col') Delete
             tr(v-for='(stint, stint_key) in stints', :key='stint_key')
               td {{ stint_key + 1}}
@@ -110,12 +108,10 @@
               td {{ formatDate(stint.end) }}
               td.col-1 
                 input(class='form-control', type='number', v-model.number='stint.length', @change='updateStints') 
-              td(:style='"background-color: " + stint.driver.color ').driver-stint {{ stint.driver.short }}
-              td(:style='"background-color: " + stint.spotter.color ').driver-stint {{ stint.spotter.short }}
-              td 
+              td(:style='"background-color: " + stint.driver.color +  "; color:" + invertColor(stint.driver.color)')
                 select(class='form-control',v-model='stint.driver', @change='updateStints')
                   option(v-for="(driver, driver_key) in $store.state.drivers", :key='driver_key', :value='driver') {{ driver.firstName + ' ' + driver.lastName}} 
-              td  
+              td(:style='"background-color: " + stint.spotter.color + "; color:" + invertColor(stint.spotter.color)') 
                 select(class='form-control',v-model='stint.spotter', @change='updateStints')
                   option(v-for="(driver, driver_key) in $store.state.drivers", :key='driver_key', :value='driver') {{ driver.firstName + ' ' + driver.lastName}}
               td
@@ -128,6 +124,7 @@
 
 <script>
 import { Compact } from 'vue-color'
+import invert from 'invert-color'
 Date.prototype.addMinutes = function(minutes) {
   this.setTime(this.getTime() + minutes * 60 * 1000)
   return this
@@ -152,6 +149,9 @@ export default {
     this.stints = this.calculateStints()
   },
   methods: {
+    invertColor(color) {
+      return invert(color)
+    },
     isStartMember(driver, isSpotter) {
       if (this.stints.length > 0) {
         return (

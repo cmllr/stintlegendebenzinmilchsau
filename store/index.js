@@ -27,37 +27,37 @@ const indexStore = new Vapi({
       {
         firstName: 'Marcello',
         lastName: 'Tocco',
-        color: 'fuchsia',
+        color: '#4286f4',
         short: 'MTO'
       },
       {
         firstName: 'Christoph',
         lastName: 'Mueller',
-        color: 'green',
+        color: '#4286f4',
         short: 'CHM'
       },
       {
         firstName: 'Marius',
         lastName: 'van Wyk',
-        color: 'red',
+        color: '#4286f4',
         short: 'MVW'
       },
       {
         firstName: 'Rob',
         lastName: 'Timpen',
-        color: 'yellow',
+        color: '#4286f4',
         short: 'RT'
       },
       {
         firstName: 'Daryl',
         lastName: 'Russell',
-        color: '#00008366',
+        color: '#4286f4',
         short: 'DRL'
       },
       {
         firstName: 'Niklas',
         lastName: 'Probadnik',
-        color: 'brown',
+        color: '#4286f4',
         short: 'NPK'
       }
     ],
