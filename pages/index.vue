@@ -54,7 +54,7 @@
       div.col-10
         div.row
           div.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key')
-            span.badge.badge-light(:style='"background-color:" + driver.color ') {{ driver.short }} 
+            span.badge.badge-light(:style='"background-color:" + driver.color ',v-on:click="editDriver(driver)") {{ driver.short }} 
             i(title='start driver', v-if='isStartMember(driver, false)').fas.fa-car-side.driver-icon
             i(title='start spotter', v-if='isStartMember(driver, true)').fas.fa-binoculars.driver-icon
             i(title='end driver', v-if='isEndMember(driver, false)').fas.fa-flag-checkered.driver-icon
@@ -64,22 +64,21 @@
           div.row.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key') 
             div.col-12 {{ getDriverString(driver) }} 
       div.col-1 
-        a(href='#',@click="newDriverData.dialogOpen = !newDriverData.dialogOpen") add driver...
-    div.row(v-if="newDriverData.dialogOpen")
+        a(href='#',@click="driverEditData.dialogOpen = !driverEditData.dialogOpen") add driver...
+    div.row(v-if="driverEditData.dialogOpen")
       div.col-4
       div.col-4
         div.form-group
           label first name
-          input.form-control(placeholder='first name',v-model="newDriverData.firstName")
+          input.form-control(placeholder='first name',v-model="driverEditData.firstName")
         div.form-group
           label last name
-          input.form-control(placeholder='last name',v-model="newDriverData.lastName")
+          input.form-control(placeholder='last name',v-model="driverEditData.lastName")
         div.form-group
           label short code
-          input.form-control(placeholder='last name',v-model="newDriverData.short")
+          input.form-control(placeholder='last name',v-model="driverEditData.short")
         div.form-group
-          label color
-          input.form-control(placeholder='last name',v-model="newDriverData.color")
+          compact-picker(v-model="driverEditData.color")
         div.form-group
           button(class='btn btn-primary',v-on:click="addDriver") add
     h1 race 
@@ -128,15 +127,19 @@
 </template>
 
 <script>
+import { Compact } from 'vue-color'
 Date.prototype.addMinutes = function(minutes) {
   this.setTime(this.getTime() + minutes * 60 * 1000)
   return this
 }
 export default {
+  components: {
+    'compact-picker': Compact
+  },
   data: () => {
     return {
       stints: [],
-      newDriverData: {
+      driverEditData: {
         firstName: null,
         lastName: null,
         dialogOpen: false,
@@ -252,16 +255,28 @@ export default {
         }) === 'undefined'
       ) {
         this.$store.commit('removeDriver', driver)
+        this.updateStints()
       }
     },
     addDriver() {
+      var old = this.$store.state.drivers.find(
+        d => d.short === this.driverEditData.short // if already there -> update
+      )
+      if (old) {
+        this.$store.commit('removeDriver', old) //dont use removeDriver b/c updateStints causes null...
+      }
       this.$store.commit('addDriver', {
-        firstName: this.newDriverData.firstName,
-        lastName: this.newDriverData.lastName,
-        short: this.newDriverData.short,
-        color: this.newDriverData.color
+        firstName: this.driverEditData.firstName,
+        lastName: this.driverEditData.lastName,
+        short: this.driverEditData.short,
+        color: this.driverEditData.color.hex
       })
-      this.newDriverData.dialogOpen = false
+      this.driverEditData.dialogOpen = false
+      this.updateStints()
+    },
+    editDriver(driver) {
+      this.driverEditData = this.copy(driver)
+      this.driverEditData.dialogOpen = true
     }
   }
 }
