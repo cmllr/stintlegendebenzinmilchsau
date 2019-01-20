@@ -1,44 +1,54 @@
 <template lang="pug">
   div
-    h1 facts
+    div.row
+      div.col-6
+        code Share: {{ $store.state.urls.private }}
+      div.col-6
+        select(class='form-control', v-model="displayTimezone", @change="stints = calculateStints()")
+          option(v-for="(timezone, timezone_key) in timezones", :key="timezone_key") {{ timezone }}
+    
+    
+    hr
+    a(v-on:click='currentlyEditing=!currentlyEditing') edit
     div.row
       div.col-6.row
         div.col-12.row
           div.col-3 series
-          div.col-9 {{ $store.state.series }}
+          div.col-9 
+            span(v-if='!currentlyEditing') {{ $store.state.series }}
+            input.form-control(type='text', v-if='currentlyEditing', v-model="series")
         div.col-12.row
           div.col-3 race
-          div.col-9 {{ $store.state.race }}
+          div.col-9
+            span(v-if='!currentlyEditing') {{ $store.state.raceName }}
+            input.form-control(type='text', v-if='currentlyEditing', v-model="raceName")
         div.col-12.row 
           div.col-3 date
-          div.col-9 {{ $store.state.date }}
-        div.col-12.row 
-          div.col-3 timezone
-          div.col-9 
-            select(class='form-control', v-model="displayTimezone", @change="stints = calculateStints()")
-              option(v-for="(timezone, timezone_key) in timezones", :key="timezone_key") {{ timezone }}
-        div.col-12.row 
-          div.col-3 Edit link
-          div.col-9 {{ $store.state.urls.private }}
-        div.col-12.row 
-          div.col-3 View only link
-          div.col-9 {{ $store.state.urls.public }}
+          div.col-9
+            span(v-if='!currentlyEditing') {{ $store.state.date }}
+            input.form-control(type='date', v-if='currentlyEditing', v-model="date")
       div.col-4.row
-        div.col-3
-        div.col-9.row
+        div.col-12.row
           div.col-6.row
             div.col-12 qualy
-            div.col-12 {{ convertTime($store.state.times.qualy).format('HH:mm') }}
+            div.col-12
+              span(v-if='!currentlyEditing') {{ convertTime($store.state.times.qualy).format('HH:mm') }}
+              input.form-control(type='time', v-if='currentlyEditing', v-model="qualy")
           div.col-6.row
             div.col-12 warmup
-            div.col-12 {{ convertTime($store.state.times.warmup).format('HH:mm') }}
+            div.col-12
+              span(v-if='!currentlyEditing') {{ convertTime($store.state.times.warmup).format('HH:mm') }}
+              input.form-control(type='time', v-if='currentlyEditing', v-model="warmup")
           div.col-6.row
             div.col-12 briefing
-            div.col-12 {{ convertTime($store.state.times.briefing).format('HH:mm') }}
+            div.col-12
+              span(v-if='!currentlyEditing') {{ convertTime($store.state.times.briefing).format('HH:mm') }}
+              input.form-control(type='time', v-if='currentlyEditing', v-model="briefing")
           div.col-6.row
             div.col-12 race
-            div.col-12 {{ convertTime($store.state.times.race).format('HH:mm') }}
-       
+            div.col-12
+              span(v-if='!currentlyEditing') {{ convertTime($store.state.times.race).format('HH:mm') }}
+              input.form-control(type='time', v-if='currentlyEditing', v-model="race")
     hr
     div.row
       div.col-6.row
@@ -151,10 +161,79 @@ export default {
         color: 'black',
         short: null
       },
-      displayTimezone: null
+      displayTimezone: null,
+      currentlyEditing: false
     }
   },
   computed: {
+    series: {
+      get() {
+        return this.$store.state.series
+      },
+      set(value) {
+        this.$store.commit('updateSeries', value)
+      }
+    },
+    raceName: {
+      get() {
+        return this.$store.state.raceName
+      },
+      set(value) {
+        this.$store.commit('updateRaceName', value)
+      }
+    },
+    qualy: {
+      get() {
+        return this.$store.state.times.qualy
+      },
+      set(value) {
+        this.$store.commit('updateTimes', {
+          time: 'qualy',
+          value: value
+        })
+      }
+    },
+    briefing: {
+      get() {
+        return this.$store.state.times.briefing
+      },
+      set(value) {
+        this.$store.commit('updateTimes', {
+          time: 'briefing',
+          value: value
+        })
+      }
+    },
+    warmup: {
+      get() {
+        return this.$store.state.times.warmup
+      },
+      set(value) {
+        this.$store.commit('updateTimes', {
+          time: 'warmup',
+          value: value
+        })
+      }
+    },
+    race: {
+      get() {
+        return this.$store.state.times.race
+      },
+      set(value) {
+        this.$store.commit('updateTimes', {
+          time: 'race',
+          value: value
+        })
+      }
+    },
+    date: {
+      get() {
+        return this.$store.state.date
+      },
+      set(value) {
+        this.$store.commit('updateDate', value)
+      }
+    },
     timezones() {
       return moment.tz.names()
     },
@@ -187,12 +266,21 @@ export default {
   mounted() {
     this.stints = this.calculateStints()
     this.displayTimezone = this.$store.state.timezone
-    window.addEventListener('keydown', this.closeAllStints)
+    window.addEventListener('keydown', this.exitAnyEditingIfEscape)
   },
   beforeDestroy() {
-    window.removeEventListener('keydown', this.closeAllStints)
+    window.removeEventListener('keydown', this.exitAnyEditingIfEscape)
   },
   methods: {
+    exitAnyEditingIfEscape(e) {
+      if (e.keyCode == 13) {
+        this.stints = this.calculateStints()
+        this.exitAnyEditing()
+      }
+      if (e.keyCode === 27) {
+        this.exitAnyEditing()
+      }
+    },
     convertTime(time) {
       var initial = moment.tz(
         this.$store.state.date + ' ' + time,
@@ -294,10 +382,11 @@ export default {
         this.updateStints()
       }
     },
-    closeAllStints() {
+    exitAnyEditing() {
       this.stints.forEach(s => {
         s.editing = false
       })
+      this.currentlyEditing = false
     },
     removeDriver(driver) {
       if (

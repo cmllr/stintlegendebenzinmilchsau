@@ -12,7 +12,7 @@ const indexStore = new Vapi({
       private: 'https://stints.seawolf-netrace.de/hpx2has/23jkl/'
     },
     series: 'M1 Endurance',
-    race: '12+11,5 hours of server admin rage quit',
+    raceName: '12+11,5 hours of server admin rage quit',
     date: '2019-01-01',
     timezone: 'Europe/London', //timezone (local)
     times: {
@@ -95,6 +95,19 @@ indexStore.mutations.removeDriver = (state, driver) => {
 }
 indexStore.mutations.addDriver = (state, driver) => {
   state.drivers.push(driver)
+}
+// Mutations for all common values
+indexStore.mutations.updateSeries = (state, series) => {
+  state.series = series
+}
+indexStore.mutations.updateRaceName = (state, race) => {
+  state.raceName = race
+}
+indexStore.mutations.updateDate = (state, date) => {
+  state.date = date
+}
+indexStore.mutations.updateTimes = (state, payload) => {
+  state.times[payload.time] = payload.value
 }
 const createStore = () => {
   return new Vuex.Store(indexStore)
