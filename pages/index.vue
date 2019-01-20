@@ -14,7 +14,9 @@
           div.col-9 {{ $store.state.date }}
         div.col-12.row 
           div.col-3 timezone
-          div.col-9 {{ $store.state.timezone }}
+          div.col-9 
+            select(class='form-control', v-model="displayTimezone", @change="stints = calculateStints()")
+              option(v-for="(timezone, timezone_key) in timezones", :key="timezone_key") {{ timezone }}
         div.col-12.row 
           div.col-3 Edit link
           div.col-9 {{ $store.state.urls.private }}
@@ -26,16 +28,16 @@
         div.col-9.row
           div.col-6.row
             div.col-12 qualy
-            div.col-12 {{ $store.state.times.qualy }}
+            div.col-12 {{ convertTime($store.state.times.qualy).format('HH:mm') }}
           div.col-6.row
             div.col-12 warmup
-            div.col-12 {{ $store.state.times.warmup}}
+            div.col-12 {{ convertTime($store.state.times.warmup).format('HH:mm') }}
           div.col-6.row
             div.col-12 briefing
-            div.col-12 {{ $store.state.times.briefing }}
+            div.col-12 {{ convertTime($store.state.times.briefing).format('HH:mm') }}
           div.col-6.row
             div.col-12 race
-            div.col-12 {{ $store.state.times.race }}
+            div.col-12 {{ convertTime($store.state.times.race).format('HH:mm') }}
        
     hr
     div.row
@@ -54,15 +56,20 @@
       div.col-10
         div.row
           div.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key')
-            span.badge.badge-light(:style='"background-color:" + driver.color ',v-on:click="editDriver(driver)") {{ driver.short }} 
-            i(title='start driver', v-if='isStartMember(driver, false)').fas.fa-car-side.driver-icon
-            i(title='start spotter', v-if='isStartMember(driver, true)').fas.fa-binoculars.driver-icon
-            i(title='end driver', v-if='isEndMember(driver, false)').fas.fa-flag-checkered.driver-icon
+            span.badge.badge-light(:style='"background-color:" + driver.color  + "; color:" + invertColor(driver.color)',v-on:click="editDriver(driver)") {{ driver.short }} 
             a(href='#', v-on:click.prevent='removeDriver(driver)')
               i.fas.fa-trash
         div.row
           div.row.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key') 
             div.col-12 {{ getDriverString(driver) }} 
+        div.row
+          div.row.col(v-for='(driver, driver_key) in $store.state.drivers', :key='driver_key') 
+            div.col-2
+              i.fas.fa-car
+            div.col-9 {{ Number.parseFloat(driveTimes[driver.short]/60).toPrecision(4) }} h
+            div.col-2
+              i.fas.fa-binoculars
+            div.col-9 {{ Number.parseFloat(spotterTimes[driver.short]/60).toPrecision(4) }} h
       div.col-1 
         a(href='#',@click="driverEditData.dialogOpen = !driverEditData.dialogOpen") add driver...
     div.row(v-if="driverEditData.dialogOpen")
@@ -81,40 +88,39 @@
           compact-picker(v-model="driverEditData.color")
         div.form-group
           button(class='btn btn-primary',v-on:click="addDriver") add
-    h1 race 
-    a.btn.btn-primary(v-on:click='addEmptyStint') add stint
     hr
+    a(href='#', v-on:click='addEmptyStint') add stint
     div.row
-      div.col-12
-        table.table.table-bordered.col-12
+      div.col-12.row
+        div.col-2
+        table.table.col-8.table-striped.table-hover
           thead
             tr
               th(scope='col') #
-              th(scope='col') 
-              th(scope='col') START
-              th(scope='col') END
-              th(scope='col') LENGTH
-              th(scope='col') DRIVER
-              th(scope='col') SPOTTER
-              th(scope='col') Delete
+              th(scope='col') stint
+              th(scope='col') length
+              th(scope='col') driver
+              th(scope='col') spotter
+              th(scope='col') actions
             tr(v-for='(stint, stint_key) in stints', :key='stint_key')
-              td {{ stint_key + 1}}
               td 
-                div.col-12 
-                  a(href='#',v-on:click.prevent='moveStint(-1,stint_key)').far.fa-arrow-alt-circle-up
-                div.col-12
-                  a(href='#',v-on:click.prevent='moveStint(1,stint_key)').far.fa-arrow-alt-circle-down
-              td {{ formatDate(stint.start) }}
-              td {{ formatDate(stint.end) }}
-              td.col-1 
+                div.row
+                  div.col-12
+                    a(href='#',v-on:click.prevent='moveStint(-1,stint_key)').far.fa-arrow-alt-circle-up
+                  div.col-12
+                    a(href='#',v-on:click.prevent='moveStint(1,stint_key)').far.fa-arrow-alt-circle-down
+              td.col-2  {{ formatDate(stint.start) }} - {{ formatDate(stint.end) }}
+              td.col-2 
                 input(class='form-control', type='number', v-model.number='stint.length', @change='updateStints') 
-              td(:style='"background-color: " + stint.driver.color +  "; color:" + invertColor(stint.driver.color)')
-                select(class='form-control',v-model='stint.driver', @change='updateStints')
+              td.col-3(class="stint-name",:style='"border-left-color: " + stint.driver.color')
+                span.driver-shortcode(v-if="!stint.editing",v-on:click.prevent='stint.editing = !stint.editing') {{ stint.driver.lastName }} 
+                select(class='form-control',v-model='stint.driver', v-if="stint.editing", @change='updateStints')
                   option(v-for="(driver, driver_key) in $store.state.drivers", :key='driver_key', :value='driver') {{ driver.firstName + ' ' + driver.lastName}} 
-              td(:style='"background-color: " + stint.spotter.color + "; color:" + invertColor(stint.spotter.color)') 
-                select(class='form-control',v-model='stint.spotter', @change='updateStints')
+              td.col-3(class="stint-name",:style='"border-left-color: " + stint.spotter.color')
+                span.driver-shortcode(v-if="!stint.editing",v-on:click.prevent='stint.editing = !stint.editing') {{ stint.spotter.lastName }}  
+                select(class='form-control',v-model='stint.spotter', v-if="stint.editing", @change='updateStints')
                   option(v-for="(driver, driver_key) in $store.state.drivers", :key='driver_key', :value='driver') {{ driver.firstName + ' ' + driver.lastName}}
-              td
+              td.col-2
                 a(href='#', v-on:click.prevent='removeStint(stint_key)') 
                   i.fas.fa-trash
       div.col-1
@@ -125,6 +131,8 @@
 <script>
 import { Compact } from 'vue-color'
 import invert from 'invert-color'
+import moment from 'moment'
+import 'moment-timezone'
 Date.prototype.addMinutes = function(minutes) {
   this.setTime(this.getTime() + minutes * 60 * 1000)
   return this
@@ -142,36 +150,60 @@ export default {
         dialogOpen: false,
         color: 'black',
         short: null
-      }
+      },
+      displayTimezone: null
+    }
+  },
+  computed: {
+    timezones() {
+      return moment.tz.names()
+    },
+    drivers() {
+      return [...this.$store.state.drivers].sort(
+        (a, b) => (a.short > b.short ? 1 : -1)
+      )
+    },
+    driveTimes() {
+      var result = {}
+      this.drivers.forEach(driver => {
+        result[driver.short] = 0
+      })
+      this.stints.forEach(stint => {
+        result[stint.driver.short] += stint.length
+      })
+      return result
+    },
+    spotterTimes() {
+      var result = {}
+      this.drivers.forEach(driver => {
+        result[driver.short] = 0
+      })
+      this.stints.forEach(stint => {
+        result[stint.spotter.short] += stint.length
+      })
+      return result
     }
   },
   mounted() {
     this.stints = this.calculateStints()
+    this.displayTimezone = this.$store.state.timezone
+    window.addEventListener('keydown', this.closeAllStints)
+  },
+  beforeDestroy() {
+    window.removeEventListener('keydown', this.closeAllStints)
   },
   methods: {
+    convertTime(time) {
+      var initial = moment.tz(
+        this.$store.state.date + ' ' + time,
+        this.$store.state.timezone
+      )
+      return initial.tz(
+        this.displayTimezone ? this.displayTimezone : this.$store.state.timezone
+      )
+    },
     invertColor(color) {
       return invert(color)
-    },
-    isStartMember(driver, isSpotter) {
-      if (this.stints.length > 0) {
-        return (
-          (!isSpotter && this.stints[0].driver.short === driver.short) ||
-          (isSpotter && this.stints[0].spotter.short === driver.short)
-        )
-      }
-      return false
-    },
-    isEndMember(driver, isSpotter) {
-      if (this.stints.length > 0) {
-        return (
-          (!isSpotter &&
-            this.stints[this.stints.length - 1].driver.short ===
-              driver.short) ||
-          (isSpotter &&
-            this.stints[this.stints.length - 1].spotter.short === driver.short)
-        )
-      }
-      return false
     },
     copy(data) {
       return JSON.parse(JSON.stringify(data))
@@ -185,24 +217,38 @@ export default {
       return driver.firstName + ' ' + driver.lastName
     },
     formatDate(date) {
-      return date.toLocaleTimeString()
+      return moment.tz(date, this.displayTimezone).format('HH:mm')
     },
     calculateStints() {
+      //TODO: Use timezone which is set
       var stints = []
       var raceStart = this.$store.state.times.race
-      var raceStartDateTime = new Date()
-      raceStartDateTime.setUTCMinutes(0)
-      raceStartDateTime.setUTCHours(12)
-      raceStartDateTime.setUTCSeconds(0)
-      console.log(raceStartDateTime)
+      var raceStartDateTime = this.convertTime(raceStart).toDate()
       var lastTime = raceStartDateTime
+
+      var timezoneAwareStart = moment
+        .tz(
+          this.$store.state.date + ' ' + raceStart,
+          this.$store.state.timezone
+        )
+        .tz(
+          this.displayTimezone
+            ? this.displayTimezone
+            : this.$store.state.timezone
+        )
+      var lastTimezoneAwareTime = timezoneAwareStart
       this.$store.state.stints.forEach(element => {
         var clone = this.copy(element)
+        clone['editing'] = false
         clone['driver'] = this.getDriverByShortCode(element.driver)
         clone['spotter'] = this.getDriverByShortCode(element.spotter)
-        clone['start'] = new Date(lastTime.getTime())
-        clone['end'] = new Date(lastTime.addMinutes(clone.length))
-        lastTime = new Date(clone['end'].getTime())
+        clone['start'] = moment
+          .tz(lastTimezoneAwareTime.format(), this.displayTimezone)
+          .format()
+        clone['end'] = lastTimezoneAwareTime
+          .add(clone.length, 'minutes')
+          .format()
+        lastTimezoneAwareTime = moment.tz(clone['end'], this.displayTimezone)
         stints.push(clone)
       })
       return stints
@@ -248,6 +294,11 @@ export default {
         this.updateStints()
       }
     },
+    closeAllStints() {
+      this.stints.forEach(s => {
+        s.editing = false
+      })
+    },
     removeDriver(driver) {
       if (
         typeof this.stints.find(function(e) {
@@ -289,5 +340,11 @@ export default {
 .driver-stint {
   vertical-align: middle !important;
   text-align: center;
+}
+.stint-name {
+  text-align: center;
+  border-left-width: 15px;
+  border-left-style: solid;
+  vertical-align: middle;
 }
 </style>

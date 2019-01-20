@@ -20,6 +20,8 @@
     "bootstrap-vue": "^2.0.0-beta",
     "cross-env": "^5.2.0",
     "invert-color": "^2.0.0",
+    "moment": "^2.23.0",
+    "moment-timezone": "^0.5.23",
     "nuxt": "^2.0.0",
     "nuxt-fontawesome": "^0.4.0",
     "pug": "^2.0.3",
