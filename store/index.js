@@ -26,44 +26,7 @@ const indexStore = new Vapi({
       car: 'Oreca 07',
       setup: 'T12_test.svm'
     },
-    drivers: [
-      {
-        firstName: 'Marcello',
-        lastName: 'Tocco',
-        color: '#4286f4',
-        short: 'MTO'
-      },
-      {
-        firstName: 'Christoph',
-        lastName: 'Mueller',
-        color: '#4286f4',
-        short: 'CHM'
-      },
-      {
-        firstName: 'Marius',
-        lastName: 'van Wyk',
-        color: '#4286f4',
-        short: 'MVW'
-      },
-      {
-        firstName: 'Rob',
-        lastName: 'Timpen',
-        color: '#4286f4',
-        short: 'RT'
-      },
-      {
-        firstName: 'Daryl',
-        lastName: 'Russell',
-        color: '#4286f4',
-        short: 'DRL'
-      },
-      {
-        firstName: 'Niklas',
-        lastName: 'Probadnik',
-        color: '#4286f4',
-        short: 'NPK'
-      }
-    ],
+    drivers: [],
     stints: [
       {
         length: 60,
